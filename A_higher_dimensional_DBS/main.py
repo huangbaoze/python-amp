@@ -71,14 +71,14 @@ class A_higher_dimensional_DBS:
         # self.wmin = 0.4
         # self.c1 = 2
         # self.c2 = 3
-        self.lam1 = 1
+        self.lam1 = 10
         self.lam2 = 19
-        self.lam3 = 37
+        self.lam3 = 28
         self.iterationall = 20000
 
     def run(self):
-        bandminmax = np.zeros([5, 2, self.N + 1]) # 临时加上索引“3”代表第1波长，“4”代表第37波长
-        phaseminmax = np.zeros([5, 2, self.N + 1])
+        bandminmax = np.zeros([3, 2, self.N + 1])
+        phaseminmax = np.zeros([3, 2, self.N + 1])
         # sizeboun = np.zeros(self.N + 1).astype(int)
 
         global bandAall, bandPall
@@ -90,15 +90,30 @@ class A_higher_dimensional_DBS:
             bandA = np.array(bandA)
             bandP = np.array(bandP)
 
-            sum1 = np.where(bandA[:, self.lam2 - 1] == np.min(bandA[:, self.lam2 - 1]))[0][0]
-            sum2 = np.where(bandA[:, self.lam2 - 1] == np.max(bandA[:, self.lam2 - 1]))[0][0]
-            t = 0
-            for lam in np.array([self.lam1, self.lam2, self.lam3, 1, 37]):
-                bandminmax[t, 0, i] = bandA[:, lam - 1][sum1]
-                bandminmax[t, 1, i] = bandA[:, lam - 1][sum2]
-                phaseminmax[t, 0, i] = bandP[:, lam - 1][sum1]
-                phaseminmax[t, 1, i] = bandP[:, lam - 1][sum2]
-                t += 1
+            tmpA1 = bandA[:, self.lam1 - 1]
+            tmpA2 = bandA[:, self.lam2 - 1]
+            tmpA3 = bandA[:, self.lam3 - 1]
+            tmpP1 = bandP[:, self.lam1 - 1]
+            tmpP2 = bandP[:, self.lam2 - 1]
+            tmpP3 = bandP[:, self.lam3 - 1]
+
+            sum1 = np.where(tmpA2 == np.min(tmpA2))[0][0]
+            sum2 = np.where(tmpA2 == np.max(tmpA2))[0][0]
+            # 划定振幅优化实际范围
+            bandminmax[1, 0, i] = tmpA2[sum1]
+            bandminmax[1, 1, i] = tmpA2[sum2]
+            phaseminmax[1, 0, i] = tmpP2[sum1]
+            phaseminmax[1, 1, i] = tmpP2[sum2]
+
+            bandminmax[0, 0, i] = tmpA1[sum1]
+            bandminmax[0, 1, i] = tmpA1[sum2]
+            phaseminmax[0, 0, i] = tmpP1[sum1]
+            phaseminmax[0, 1, i] = tmpP1[sum2]
+
+            bandminmax[2, 0, i] = tmpA3[sum1]
+            bandminmax[2, 1, i] = tmpA3[sum2]
+            phaseminmax[2, 0, i] = tmpP3[sum1]
+            phaseminmax[2, 1, i] = tmpP3[sum2]
 
         matrixband = np.zeros([2 * self.N + 1, 2 * self.N + 1])
         matrixband1 = np.zeros([2 * self.N + 1, 2 * self.N + 1])
@@ -107,20 +122,15 @@ class A_higher_dimensional_DBS:
         matrixPhaseBandGap1 = np.zeros([2 * self.N + 1, 2 * self.N + 1])
         matrixPhaseBandGap2 = np.zeros([2 * self.N + 1, 2 * self.N + 1])
         matrixPhaseBandGap3 = np.zeros([2 * self.N + 1, 2 * self.N + 1])
-        ## 增加第1波长和第37波长，用于判别轴向变焦范围
-        matrixband4 = np.zeros([2 * self.N + 1, 2 * self.N + 1])
-        matrixPhaseBandGap4 = np.zeros([2 * self.N + 1, 2 * self.N + 1])
-        matrixband5 = np.zeros([2 * self.N + 1, 2 * self.N + 1])
-        matrixPhaseBandGap5 = np.zeros([2 * self.N + 1, 2 * self.N + 1])
 
         # 随机生成粒子矩阵
         for j in range(self.N + 1):
             # 每环0/1随机
-            # matrixtmp = self.bandnum[self.bandnum == j + 1]
-            # arraysum = np.around(np.random.rand(np.size(matrixtmp))).astype(int)
+            matrixtmp = self.bandnum[self.bandnum == j + 1]
+            arraysum = np.around(np.random.rand(np.size(matrixtmp))).astype(int)
 
             # # 同环0/1随机
-            arraysum = np.around(np.random.rand(1)).astype(int)
+            # arraysum = np.around(np.random.rand(1)).astype(int)
 
             matrixband[self.bandnum == j + 1] = bandminmax[1, arraysum, j]
 
@@ -133,37 +143,29 @@ class A_higher_dimensional_DBS:
             matrixband3[self.bandnum == j + 1] = bandminmax[2, arraysum, j]
             matrixPhaseBandGap3[self.bandnum == j + 1] = phaseminmax[2, arraysum, j]
 
-            matrixband4[self.bandnum == j + 1] = bandminmax[3, arraysum, j]
-            matrixPhaseBandGap4[self.bandnum == j + 1] = phaseminmax[3, arraysum, j]
+        # 初始化
+        # min_band = pd.read_excel('E:\\huangbaoze\\matlab\\Amplitude optimization_upgrade_circular_symmetry_new_copy' +
+        #                          '\\otherwavelengths_verification\\(54)_up_circle_28_19_10_discont_gd_gdd_37_4(end)\\min_band.xlsx',
+        #                          header=None, sheet_name=0).values
+        # min_band = np.array(min_band)
+        # for i in range(self.N + 1):
+        #     print(i)
+        #     matrixband[self.bandnum == i + 1] = min_band[217, self.N - i]
+        #
+        #     summ = np.where(bandminmax[1, :, i] == min_band[217, self.N - i])[0]
+        #     if np.size(summ) == 0:
+        #         summ = np.around(np.random.rand(1)).astype(int)
+        #     print(summ)
+        #
+        #     matrixband1[self.bandnum == i + 1] = bandminmax[0, summ, i]
+        #     matrixPhaseBandGap1[self.bandnum == i + 1] = phaseminmax[0, summ, i]
+        #
+        #     matrixband2[self.bandnum == i + 1] = bandminmax[1, summ, i]
+        #     matrixPhaseBandGap2[self.bandnum == i + 1] = phaseminmax[1, summ, i]
+        #
+        #     matrixband3[self.bandnum == i + 1] = bandminmax[2, summ, i]
+        #     matrixPhaseBandGap3[self.bandnum == i + 1] = phaseminmax[2, summ, i]
 
-            matrixband5[self.bandnum == j + 1] = bandminmax[4, arraysum, j]
-            matrixPhaseBandGap5[self.bandnum == j + 1] = phaseminmax[4, arraysum, j]
-
-        mmatrixband = np.zeros([2 * self.N + 1, 2 * self.N + 1])
-        mmatrixPhaseBandGap = np.zeros([2 * self.N + 1, 2 * self.N + 1])
-        for k in np.array([1, 37]):
-            if k == 1:
-                mmatrixband = matrixband4
-                mmatrixPhaseBandGap = matrixPhaseBandGap4
-            if k == 37:
-                mmatrixband = matrixband5
-                mmatrixPhaseBandGap = matrixPhaseBandGap5
-            ##角谱衍射
-            ratio1, distance1, strength1, efficiency, ItotalDisplay_sum, ItotalDisplay_incident_sum = Fun_diffraction(
-                self.phi, mmatrixband,
-                mmatrixPhaseBandGap, k,
-                self.samplenum, self.Dx, self.T, self.N, self.bandnum,
-                self.lamc, self.lam)
-            NA1 = np.sin(np.arctan(self.R / (distance1 * self.lamc)))
-            DL1 = 0.5 / NA1
-            fitness = 1 - (DL1 - ratio1)
-            data = np.array([[fitness[0], distance1[0], strength1, ratio1[0], DL1[0], efficiency, ItotalDisplay_sum,
-                              ItotalDisplay_incident_sum]])
-            print(data.get())
-            if k == 1 and 373.040657439446 - distance1 > 11:
-                return 1
-            if k == 37 and distance1 - 269.521875 > 12:
-                return 1
 
         Ratio = np.zeros(1)
         Distance = np.zeros(1)
@@ -314,13 +316,10 @@ class A_higher_dimensional_DBS:
         return Ratio[0]
 
 
-flag = 19
+flag = 14
 if __name__ == '__main__':
     main = A_higher_dimensional_DBS()
     kk = main.run()
-    while kk == 1:
-        main = A_higher_dimensional_DBS()
-        kk = main.run()
     while kk > 0.01:
         flag += 1
         main = A_higher_dimensional_DBS()
